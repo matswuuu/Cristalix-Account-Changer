@@ -6,7 +6,8 @@
   1. Запустите лаунчер Cristalix
   2. Выйдите из аккаунта
   3. Заново войдите в него
-  4. Нажмите "токен" в Account-Changer
+  4. Закройте лаунчер
+  5. Нажмите "токен" в Account-Changer
 
 ## .exe версия:
   [Скачать](https://github.com/matswuuu/Cristalix-SkyBlock-Ping/releases/download/v0.0.1/Cristalix-SkyBlock-Ping.zip), разархировать и запустить main.exe
