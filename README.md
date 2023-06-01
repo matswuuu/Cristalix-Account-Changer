@@ -10,7 +10,7 @@
   5. Нажмите "токен" в Account-Changer
 
 ## .exe версия:
-  [Скачать](https://github.com/matswuuu/Cristalix-SkyBlock-Ping/releases/download/v0.0.1/Cristalix-SkyBlock-Ping.zip), разархировать и запустить main.exe
+  [Скачать](https://github.com/matswuuu/Cristalix-Account-Changer/releases/download/v0.0.1/Account.Changer.zip), разархировать и запустить Account Changer.exe
  
 ### .py версия:
   Для работы необходим [Python 3](https://www.python.org/downloads/), дополнительные библиотеки
