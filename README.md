@@ -1,6 +1,5 @@
 # Cristalix-Account-Changer
 Программа для смены аккаунтов в лаунчере Cristalix.
-# Cristalix-SkyBlock-Ping
 
 # Получение токена
   1. Запустите лаунчер Cristalix
