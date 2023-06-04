@@ -206,17 +206,6 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
         self.start_buttons.pop(id)
         self.delete_buttons.pop(id)
 
-    def enable_buttons(self):
-        global state
-        state = customtkinter.NORMAL
-
-        for button in self.start_buttons:
-            button.configure(state=state)
-
-        for group in groups:
-            group.start_all_button.configure(state=state)
-            for button in group.start_buttons:
-                button.configure(state=state)
 
 class App(customtkinter.CTk):
     def __init__(self):
@@ -281,8 +270,18 @@ class App(customtkinter.CTk):
             self.frame.add(account, token)
 
     def enable(self):
-        self.start_all_button.configure(state=customtkinter.NORMAL)
-        self.frame.enable_buttons()
+        global state
+        state = customtkinter.NORMAL
+
+        self.start_all_button.configure(state=state)
+
+        for button in self.frame.start_buttons:
+            button.configure(state=state)
+
+        for group in groups:
+            group.start_all_button.configure(state=state)
+            for button in group.start_buttons:
+                button.configure(state=state)
 
     def browse_files(self):
         browse()
