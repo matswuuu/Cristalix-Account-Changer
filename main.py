@@ -18,6 +18,7 @@ with codecs.open("config.ini", "r", encoding="utf-8") as config_file:
 
 filename = config["config"]["filename"]
 groups = []
+state = customtkinter.DISABLED
 
 
 def browse():
@@ -82,7 +83,6 @@ class Group_Frame(customtkinter.CTkScrollableFrame):
         self.start_buttons = []
         self.delete_buttons = []
         self.row = 1
-        self.state = customtkinter.DISABLED
 
         self.name_entry = customtkinter.CTkEntry(
             self, placeholder_text="Имя группы", width=160, height=20,
@@ -90,7 +90,7 @@ class Group_Frame(customtkinter.CTkScrollableFrame):
         self.name_entry.grid(row=0, column=0, pady=(10, 0), padx=(5, 5))
 
         self.start_all_button = customtkinter.CTkButton(
-            self, text="Запустить все", width=100, height=20, state=customtkinter.DISABLED,
+            self, text="Запустить все", width=100, height=20, state=state,
             command=lambda: threading.Thread(target=start_all, args=(self,)).start())
         self.start_all_button.grid(row=0, column=2, pady=(10, 0), padx=(5, 5))
 
@@ -114,7 +114,7 @@ class Group_Frame(customtkinter.CTkScrollableFrame):
         self.token_entrys.append(token_entry)
 
         start_button = customtkinter.CTkButton(
-            self, text="Запустить", width=100, height=25, state=self.state,
+            self, text="Запустить", width=100, height=25, state=state,
             command=lambda: start(self, start_button))
         start_button.grid(row=self.row, column=2, pady=(10, 0), padx=(10, 10))
         self.start_buttons.append(start_button)
@@ -155,7 +155,6 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
         self.start_buttons = []
         self.delete_buttons = []
         self.row = 0
-        self.state = customtkinter.DISABLED
 
     def add_group(self):
         group = Group_Frame(self)
@@ -182,7 +181,7 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
         self.token_entrys.append(token_entry)
 
         start_button = customtkinter.CTkButton(
-            self, text="Запустить", width=100, height=25, state=self.state,
+            self, text="Запустить", width=100, height=25, state=state,
             command=lambda: start(self, start_button))
         start_button.grid(row=self.row, column=2, pady=(10, 0), padx=(10, 10))
         self.start_buttons.append(start_button)
@@ -208,18 +207,16 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
         self.delete_buttons.pop(id)
 
     def enable_buttons(self):
+        global state
+        state = customtkinter.NORMAL
+
         for button in self.start_buttons:
-            button.configure(state=customtkinter.NORMAL)
+            button.configure(state=state)
 
-        self.state = customtkinter.NORMAL
-        
         for group in groups:
-            group.start_all_button.configure(state=customtkinter.NORMAL)
+            group.start_all_button.configure(state=state)
             for button in group.start_buttons:
-                button.configure(state=customtkinter.NORMAL)
-                
-            group.state = customtkinter.NORMAL
-
+                button.configure(state=state)
 
 class App(customtkinter.CTk):
     def __init__(self):
@@ -244,7 +241,7 @@ class App(customtkinter.CTk):
             command=lambda: threading.Thread(target=start_all, args=(self,)).start())
         self.start_all_button.place(x=10, y=10)
 
-        self.get_token_button = customtkinter.CTkButton(
+        self.get_token_button = customtkinter.CTkButton(    
             self, text="Токен", width=40, height=20, command=self.get_token)
         self.get_token_button.place(x=120, y=10)
 
