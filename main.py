@@ -17,6 +17,7 @@ with codecs.open("config.ini", "r", encoding="utf-8") as config_file:
     config.read_file(config_file)
 
 filename = config["config"]["filename"]
+groups = []
 
 
 def browse():
@@ -56,36 +57,65 @@ def login(nick, token):
             target=lambda: os.startfile(filename)).start()
 
 
-class Scrollable_Frame(customtkinter.CTkScrollableFrame):
+def start_all(self):
+    nicks, tokens = self.frame.get_all_values()
+
+    for i in range(len(nicks)):
+        login(nicks[i], tokens[i])
+        time.sleep(10)
+
+def start(self, button):
+    id = self.start_buttons.index(button)
+    nick = self.nick_entrys[id].get()
+    token = self.token_entrys[id].get()
+
+    login(nick, token)
+
+class Group_Frame(customtkinter.CTkScrollableFrame):
     def __init__(self, master):
         super().__init__(master)
         self.grid_columnconfigure(0, weight=1)
-        self.configure(width=560, height=340)
+        self.configure(width=560, height=100,
+                       border_color="#ffffff", border_width=1)
         self.nick_entrys = []
         self.token_entrys = []
         self.start_buttons = []
         self.delete_buttons = []
-        self.row = 0
+        self.row = 1
         self.state = customtkinter.DISABLED
 
-    def add(self, nick="", token=""):
-        self.row = self.row + 1
+        self.name_entry = customtkinter.CTkEntry(
+            self, placeholder_text="Имя группы", width=160, height=20,
+            border_color="#ffffff", border_width=1)
+        self.name_entry.grid(row=0, column=0, pady=(10, 0), padx=(5, 5))
 
+        self.start_all_button = customtkinter.CTkButton(
+            self, text="Запустить все", width=100, height=20, state=customtkinter.DISABLED,
+            command=lambda: threading.Thread(target=start_all, args=(self,)).start())
+        self.start_all_button.grid(row=0, column=2, pady=(10, 0), padx=(5, 5))
+
+        self.add_button = customtkinter.CTkButton(
+            self, text="+", width=20, height=20, command=self.add)
+        self.add_button.grid(row=0, column=3, pady=(10, 0), padx=(10, 5))
+
+    def add(self, nick="", token=""):
         nick_entry = customtkinter.CTkEntry(
             self, placeholder_text="Ник", width=180, height=25)
         nick_entry.grid(row=self.row, column=0, pady=(10, 0), padx=(10, 10))
-        nick_entry.insert(0, nick)
+        if nick != "":
+            nick_entry.insert(0, nick)
         self.nick_entrys.append(nick_entry)
 
         token_entry = customtkinter.CTkEntry(
             self, placeholder_text="Токен", width=230, height=25)
         token_entry.grid(row=self.row, column=1, pady=(10, 0), padx=(10, 10))
-        token_entry.insert(0, token)
+        if token != "":
+            token_entry.insert(0, token)
         self.token_entrys.append(token_entry)
 
         start_button = customtkinter.CTkButton(
             self, text="Запустить", width=100, height=25, state=self.state,
-            command=lambda: self.start(start_button))
+            command=lambda: start(self, start_button))
         start_button.grid(row=self.row, column=2, pady=(10, 0), padx=(10, 10))
         self.start_buttons.append(start_button)
 
@@ -93,6 +123,76 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
             self, text="-", width=20, height=25, command=lambda: self.delete(delete_button))
         delete_button.grid(row=self.row, column=3, pady=(10, 0), padx=(10, 5))
         self.delete_buttons.append(delete_button)
+
+        self.row = self.row + 1
+
+    def delete(self, button):
+        id = self.delete_buttons.index(button)
+        if len(self.nick_entrys) == 1:
+            group_id = groups.index(self)
+            groups.pop(group_id)
+            
+            self.grid_forget()
+
+        self.nick_entrys[id].grid_forget()
+        self.token_entrys[id].grid_forget()
+        self.start_buttons[id].grid_forget()
+        self.delete_buttons[id].grid_forget()
+
+        self.nick_entrys.pop(id)
+        self.token_entrys.pop(id)
+        self.start_buttons.pop(id)
+        self.delete_buttons.pop(id)
+
+
+class Scrollable_Frame(customtkinter.CTkScrollableFrame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.grid_columnconfigure(0, weight=1)
+        self.configure(width=610, height=340)
+        self.nick_entrys = []
+        self.token_entrys = []
+        self.start_buttons = []
+        self.delete_buttons = []
+        self.row = 0
+        self.state = customtkinter.DISABLED
+
+    def add_group(self):
+        group = Group_Frame(self)
+        group.add()
+        group.grid(row=self.row, column=0, pady=(
+            15, 15), padx=(10, 10), columnspan=4)
+        groups.append(group)
+
+        self.row = self.row + 1
+
+    def add(self, nick="", token=""):
+        nick_entry = customtkinter.CTkEntry(
+            self, placeholder_text="Ник", width=180, height=25)
+        nick_entry.grid(row=self.row, column=0, pady=(10, 0), padx=(10, 10))
+        if nick != "":
+            nick_entry.insert(0, nick)
+        self.nick_entrys.append(nick_entry)
+
+        token_entry = customtkinter.CTkEntry(
+            self, placeholder_text="Токен", width=230, height=25)
+        token_entry.grid(row=self.row, column=1, pady=(10, 0), padx=(10, 10))
+        if token != "":
+            token_entry.insert(0, token)
+        self.token_entrys.append(token_entry)
+
+        start_button = customtkinter.CTkButton(
+            self, text="Запустить", width=100, height=25, state=self.state,
+            command=lambda: start(self, start_button))
+        start_button.grid(row=self.row, column=2, pady=(10, 0), padx=(10, 10))
+        self.start_buttons.append(start_button)
+
+        delete_button = customtkinter.CTkButton(
+            self, text="-", width=20, height=25, command=lambda: self.delete(delete_button))
+        delete_button.grid(row=self.row, column=3, pady=(10, 0), padx=(10, 5))
+        self.delete_buttons.append(delete_button)
+
+        self.row = self.row + 1
 
     def delete(self, button):
         id = self.delete_buttons.index(button)
@@ -107,39 +207,25 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
         self.start_buttons.pop(id)
         self.delete_buttons.pop(id)
 
-    def start(self, button):
-        id = self.start_buttons.index(button)
-        nick = self.nick_entrys[id].get()
-        token = self.token_entrys[id].get()
-
-        login(nick, token)
-
     def enable_buttons(self):
         for button in self.start_buttons:
             button.configure(state=customtkinter.NORMAL)
 
         self.state = customtkinter.NORMAL
-
-    def get_all_values(self):
-        def get_values(entrys_list):
-            l = []
-            for i in range(len(entrys_list)):
-                value = entrys_list[i].get()
-                l.append(value)
-
-            return l
-
-        nicks = get_values(self.nick_entrys)
-        tokens = get_values(self.token_entrys)
-
-        return nicks, tokens
+        
+        for group in groups:
+            group.start_all_button.configure(state=customtkinter.NORMAL)
+            for button in group.start_buttons:
+                button.configure(state=customtkinter.NORMAL)
+                
+            group.state = customtkinter.NORMAL
 
 
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
         self.title("ACCOUNT CHANGER by matswuuu")
-        self.geometry("600x400")
+        self.geometry("650x430")
         self.iconbitmap("images\logo.ico")
 
         self.frame = Scrollable_Frame(self)
@@ -155,7 +241,7 @@ class App(customtkinter.CTk):
 
         self.start_all_button = customtkinter.CTkButton(
             self, text="Запустить все", width=100, height=20, state=customtkinter.DISABLED,
-            command=lambda: threading.Thread(target=self.start_all).start())
+            command=lambda: threading.Thread(target=start_all, args=(self,)).start())
         self.start_all_button.place(x=10, y=10)
 
         self.get_token_button = customtkinter.CTkButton(
@@ -164,13 +250,27 @@ class App(customtkinter.CTk):
 
         self.add_button = customtkinter.CTkButton(
             self, text="+", width=20, height=20, command=self.frame.add)
-        self.add_button.place(x=570, y=10)
+        self.add_button.place(x=590, y=10)
+
+        self.add_group_button = customtkinter.CTkButton(
+            self, text="+", width=20, height=20, fg_color="#8b02fa",
+            hover_color="#5e00ab", command=self.frame.add_group)
+        self.add_group_button.place(x=620, y=10)
 
         for i in range(int(config["config"]["amount"])):
             nick = config["config"][f"{i}_nick"]
             token = config["config"][f"{i}_token"]
             self.frame.add(nick, token)
-
+            
+        for g in range(int(config["config"]["groups_amount"])):
+            self.frame.add_group()
+            
+            group_length = config["config"][f"{g}_group_length"]
+            for i in range(int(group_length)):
+                n = config["config"][f"{g}_{i}_group_nick"]
+                t = config["config"][f"{g}_{i}_group_token"]
+                groups[g].add(n, t)
+            
         if filename != "":
             self.enable()
 
@@ -195,25 +295,50 @@ class App(customtkinter.CTk):
         if filename != "":
             self.enable()
 
-    def start_all(self):
-        nicks, tokens = self.frame.get_all_values()
-
-        for i in range(len(nicks)):
-            login(nicks[i], tokens[i])
-            time.sleep(10)
-
     def save(self):
-        nicks, tokens = self.frame.get_all_values()
-        length = len(nicks)
+        def get_values(entrys_list):
+            l = []
+            for i in range(len(entrys_list)):
+                value = entrys_list[i].get()
+                l.append(value)
 
+            return l
+
+        nicks = get_values(self.frame.nick_entrys)
+        tokens = get_values(self.frame.token_entrys)
+        group_nicks = []
+        group_tokens = []
+        for group in groups:
+            n = get_values(group.nick_entrys)
+            group_nicks.append(n)
+            t = get_values(group.token_entrys)
+            group_tokens.append(t)
+
+        length = len(nicks)
+        groups_length = len(groups)
+
+        with codecs.open("config.ini", "r", encoding="utf-8") as config_file:
+            config_file.read()
+            
+        config.remove_section("config")
+        config.add_section("config")
+        
+        config.set("config", "amount", str(length))
+        config.set("config", "groups_amount", str(groups_length))
+        config.set("config", "filename", filename)
         for i in range(length):
-            config.set("config", "amount", str(length))
-            config.set("config", "filename", filename)
             config.set("config", f"{i}_nick", nicks[i])
             config.set("config", f"{i}_token", tokens[i])
+        
+        for g, group in enumerate(group_nicks):
+            group_length = len(group)
+            for i in range(group_length):
+                config.set("config", f"{g}_group_length", str(group_length))
+                config.set("config", f"{g}_{i}_group_nick", group_nicks[g][i])
+                config.set("config", f"{g}_{i}_group_token", group_tokens[g][i])
 
-            with codecs.open("config.ini", "w", encoding="utf-8") as config_file:
-                config.write(config_file)
+        with codecs.open("config.ini", "w", encoding="utf-8") as config_file:
+            config.write(config_file)
 
         self.destroy()
 
