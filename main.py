@@ -46,13 +46,18 @@ def get_dir():
 
 def login(nick, token):
     dir = get_dir()
-    with codecs.open("default_config.txt", "r", encoding="utf-8") as launcher_config:
-        lc = launcher_config.read()
-        lc = lc.replace("NICK", nick).replace("TOKEN", token).replace(
-            "UPDATESDIR", dir + "\\\\updates")
+    launcher_dir = dir + "/.launcher"
+    with open(launcher_dir, "r") as f:
+        launcher_dict = json.load(f)
 
-    with codecs.open(f"{dir}/.launcher", "w", encoding="utf-8") as launcher_file:
-        launcher_file.write(lc)
+        launcher_dict["accounts"] = {}
+        launcher_dict["accounts"][nick] = token
+        launcher_dict["currentAccount"] = nick
+        launcher_dict["updatesDirectory"] = dir
+
+        with open(launcher_dir, "w") as f:
+            json_dump = json.dumps(launcher_dict)
+            f.write(json_dump)
 
     if filename.endswith("jar"):
         threading.Thread(target=lambda: subprocess.call(
@@ -78,7 +83,6 @@ def start(self, button):
 
 
 class Scrollable_Frame(customtkinter.CTkScrollableFrame):
-    
     def __init__(self, master):
         super().__init__(master)
         self.grid_columnconfigure(0, weight=1)
