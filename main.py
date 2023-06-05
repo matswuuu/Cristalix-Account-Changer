@@ -27,26 +27,16 @@ filename = config["config"]["filename"]
 groups = []
 state = customtkinter.DISABLED
 
+for rootdir, dirs, files in os.walk(d):
+    for file in files:
+        if ((file.split('.')[-1]) == 'launcher'):
+            if rootdir.find("cristalix") != -1:
+                dir = rootdir
 
-def browse():
-    global filename
-    filename = filedialog.askopenfilename(
-        initialdir="/", title="Выберите лаунчер",
-        filetypes=(("Java ланучер", "*.jar*"),
-                   ("Exe лаунчер", "*.exe*")))
-
-
-def get_dir():
-    for rootdir, dirs, files in os.walk(d):
-        for file in files:
-            if ((file.split('.')[-1]) == 'launcher'):
-                if rootdir.find("cristalix") != -1:
-                    return rootdir
+launcher_dir = dir + "/.launcher"
 
 
 def login(nick, token):
-    dir = get_dir()
-    launcher_dir = dir + "/.launcher"
     with open(launcher_dir, "r") as f:
         launcher_dict = json.load(f)
 
@@ -93,9 +83,10 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
         self.delete_buttons = []
         self.row = 0
 
-    def add_group(self):
-        group = Group_Frame(self)
-        group.add()
+    def add_group(self, name="", default_add=False):
+        group = Group_Frame(self, name)
+        if default_add:
+            group.add()
         group.grid(row=self.row, column=0, pady=(
             15, 15), padx=(10, 10), columnspan=4)
         groups.append(group)
@@ -144,7 +135,7 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
         self.delete_buttons.pop(id)
 
 class Group_Frame(Scrollable_Frame):
-    def __init__(self, master):
+    def __init__(self, master, name):
         super().__init__(master)
         self.grid_columnconfigure(0, weight=1)
         self.configure(width=560, height=100,
@@ -158,6 +149,8 @@ class Group_Frame(Scrollable_Frame):
         self.name_entry = customtkinter.CTkEntry(
             self, placeholder_text="Имя группы", width=160, height=20,
             border_color="#ffffff", border_width=1)
+        if name != "":
+            self.name_entry.insert(0, name)
         self.name_entry.grid(row=0, column=0, pady=(10, 0), padx=(5, 5))
 
         self.start_all_button = customtkinter.CTkButton(
@@ -221,7 +214,7 @@ class App(customtkinter.CTk):
 
         self.add_group_button = customtkinter.CTkButton(
             self, text="+", width=20, height=20, fg_color="#8b02fa",
-            hover_color="#5e00ab", command=self.frame.add_group)
+            hover_color="#5e00ab", command=lambda: self.frame.add_group(default_add=True))
         self.add_group_button.place(x=620, y=10)
 
         for i in range(int(config["config"]["amount"])):
@@ -230,7 +223,8 @@ class App(customtkinter.CTk):
             self.frame.add(nick, token)
             
         for g in range(int(config["config"]["groups_amount"])):
-            self.frame.add_group()
+            name = config["config"][f"{g}_group_name"]
+            self.frame.add_group(name)
             
             group_length = config["config"][f"{g}_group_length"]
             for i in range(int(group_length)):
@@ -242,8 +236,7 @@ class App(customtkinter.CTk):
             self.enable()
 
     def get_token(self):
-        dir = get_dir()
-        with codecs.open(f"{dir}/.launcher", encoding="utf-8") as f:
+        with codecs.open(launcher_dir, encoding="utf-8") as f:
             lc = json.loads(f.read())
             account = lc["currentAccount"]
             token = lc["accounts"][account]
@@ -260,12 +253,16 @@ class App(customtkinter.CTk):
             button.configure(state=state)
 
         for group in groups:
-            group.start_all_button.configure(state=state)
+            group.start_alfl_button.configure(state=state)
             for button in group.start_buttons:
                 button.configure(state=state)
 
     def browse_files(self):
-        browse()
+        global filename
+        filename = filedialog.askopenfilename(
+            initialdir="/", title="Выберите лаунчер",
+            filetypes=(("Java ланучер", "*.jar*"),
+                        ("Exe лаунчер", "*.exe*")))
 
         self.browse_label.configure(text=f"Лаунчер: {filename}")
 
@@ -285,11 +282,15 @@ class App(customtkinter.CTk):
         tokens = get_values(self.frame.token_entrys)
         group_nicks = []
         group_tokens = []
+        groups_names = []
         for group in groups:
             n = get_values(group.nick_entrys)
             group_nicks.append(n)
             t = get_values(group.token_entrys)
             group_tokens.append(t)
+            
+            groups_names.append(group.name_entry.get())
+            
 
         length = len(nicks)
         groups_length = len(groups)
@@ -313,6 +314,7 @@ class App(customtkinter.CTk):
                 config.set("config", f"{g}_group_length", str(group_length))
                 config.set("config", f"{g}_{i}_group_nick", group_nicks[g][i])
                 config.set("config", f"{g}_{i}_group_token", group_tokens[g][i])
+                config.set("config", f"{g}_group_name", groups_names[g])
 
         with codecs.open("config.ini", "w", encoding="utf-8") as config_file:
             config.write(config_file)
