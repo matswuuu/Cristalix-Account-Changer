@@ -4,11 +4,18 @@ import subprocess
 import os
 import time
 import json
+import platform
 from tkinter import filedialog
 
 import customtkinter
 from configparser import ConfigParser
 
+
+system = platform.system()
+if system == "Linux":
+    d = "/"
+elif system == "Windows":
+    d = "C:/"
 
 config = ConfigParser()
 config.add_section("config")
@@ -30,13 +37,10 @@ def browse():
 
 
 def get_dir():
-    for rootdir, dirs, files in os.walk("C:/"):
+    for rootdir, dirs, files in os.walk(d):
         for file in files:
             if ((file.split('.')[-1]) == 'launcher'):
                 if rootdir.find("cristalix") != -1:
-                    rootdir = rootdir.replace(
-                        "/", "\\").replace("\\", "\\\\")
-
                     return rootdir
 
 
@@ -72,8 +76,11 @@ def start(self, button):
 
     login(nick, token)
 
-class Group_Frame(customtkinter.CTkScrollableFrame):
-    def __init__(self, master):
+
+
+class Scrollable_Frame(customtkinter.CTkScrollableFrame):
+    class Group_Frame(customtkinter.CTkScrollableFrame):
+        def __init__(self, master):
         super().__init__(master)
         self.grid_columnconfigure(0, weight=1)
         self.configure(width=560, height=100,
@@ -144,8 +151,7 @@ class Group_Frame(customtkinter.CTkScrollableFrame):
         self.start_buttons.pop(id)
         self.delete_buttons.pop(id)
 
-
-class Scrollable_Frame(customtkinter.CTkScrollableFrame):
+    
     def __init__(self, master):
         super().__init__(master)
         self.grid_columnconfigure(0, weight=1)
@@ -212,7 +218,7 @@ class App(customtkinter.CTk):
         super().__init__()
         self.title("ACCOUNT CHANGER by matswuuu")
         self.geometry("650x430")
-        self.iconbitmap("images\logo.ico")
+        #self.iconbitmap("images/logo.ico")
 
         self.frame = Scrollable_Frame(self)
         self.frame.place(x=10, y=70)
