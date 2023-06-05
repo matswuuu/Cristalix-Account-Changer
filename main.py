@@ -77,7 +77,6 @@ def start(self, button):
     login(nick, token)
 
 
-
 class Scrollable_Frame(customtkinter.CTkScrollableFrame):
     
     def __init__(self, master):
