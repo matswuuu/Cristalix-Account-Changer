@@ -163,6 +163,7 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
         
     def open_settings(self, button):
         id = self.settings_buttons.index(button)
+        print(self.windows_settings)
         self.windows_settings.pop(id)
         
         if self.settings_window is None or not self.settings_window.winfo_exists():
@@ -467,6 +468,7 @@ class App(customtkinter.CTk):
         self.destroy()
 
 
-app = App()
-app.protocol("WM_DELETE_WINDOW", app.save)
-app.mainloop()
+if __name__ == "__main__":
+    app = App()
+    app.protocol("WM_DELETE_WINDOW", app.save)
+    app.mainloop()
