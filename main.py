@@ -6,6 +6,7 @@ import time
 import json
 import platform
 from tkinter import filedialog
+from PIL import Image
 
 import customtkinter
 from configparser import ConfigParser
@@ -81,7 +82,7 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
     def __init__(self, master):
         super().__init__(master)
         self.grid_columnconfigure(0, weight=1)
-        self.configure(width=610, height=340)
+        self.configure(width=630, height=340)
         self.nick_entrys = []
         self.token_entrys = []
         self.start_buttons = []
@@ -95,7 +96,7 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
         if default_add:
             group.add()
         group.grid(row=self.row, column=0, pady=(
-            15, 15), padx=(10, 10), columnspan=4)
+            15, 15), padx=(10, 10), columnspan=5)
         groups.append(group)
 
         self.row = self.row + 1
@@ -115,10 +116,15 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
             token_entry.insert(0, token)
         self.token_entrys.append(token_entry)
         
+        image = customtkinter.CTkImage(
+            dark_image=Image.open("images/settings_gear.png"), size=(18, 18))
+        
         settings_button = customtkinter.CTkButton(
-            self, text="Настройки", width=100, height=25, 
+            self, text="", width=18, height=18, 
+            image=image, border_spacing=0, border_width=0,
+            fg_color="#ffffff", hover_color="#ffffff",
             command=lambda: self.open_settings(settings_button))
-        settings_button.grid(row=self.row, column=2, pady=(10, 0), padx=(10, 10))
+        settings_button.grid(row=self.row, column=2, pady=(10, 0), padx=(0, 0))
         self.settings_buttons.append(settings_button)
         
         self.settings_window = None
@@ -132,7 +138,7 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
 
         delete_button = customtkinter.CTkButton(
             self, text="-", width=20, height=25, command=lambda: self.delete(delete_button))
-        delete_button.grid(row=self.row, column=4, pady=(10, 0), padx=(10, 5))
+        delete_button.grid(row=self.row, column=4, pady=(10, 0), padx=(0, 5))
         self.delete_buttons.append(delete_button)
 
         self.row = self.row + 1
@@ -170,8 +176,8 @@ class Group_Frame(Scrollable_Frame):
     def __init__(self, master, name):
         super().__init__(master)
         self.grid_columnconfigure(0, weight=1)
-        self.configure(width=560, height=100,
-                    border_color="#ffffff", border_width=1)
+        self.configure(width=610, height=100,
+                       border_color="#ffffff", border_width=1)
         self.nick_entrys = []
         self.token_entrys = []
         self.start_buttons = []
@@ -190,11 +196,11 @@ class Group_Frame(Scrollable_Frame):
         self.start_all_button = customtkinter.CTkButton(
             self, text="Запустить все", width=100, height=20, state=state,
             command=lambda: threading.Thread(target=start_all, args=(self,)).start())
-        self.start_all_button.grid(row=0, column=2, pady=(10, 0), padx=(5, 5))
+        self.start_all_button.grid(row=0, column=3, pady=(10, 0), padx=(5, 5))
 
         self.add_button = customtkinter.CTkButton(
             self, text="+", width=20, height=20, command=self.add)
-        self.add_button.grid(row=0, column=3, pady=(10, 0), padx=(10, 5))
+        self.add_button.grid(row=0, column=4, pady=(10, 0), padx=(0, 5))
 
     def delete(self, button):
         id = self.delete_buttons.index(button)
@@ -274,7 +280,7 @@ class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
         self.title("ACCOUNT CHANGER by matswuuu")
-        self.geometry("650x430")
+        self.geometry("670x430")
         self.iconbitmap("images/logo.ico")
 
         self.frame = Scrollable_Frame(self)
@@ -299,12 +305,12 @@ class App(customtkinter.CTk):
 
         self.add_button = customtkinter.CTkButton(
             self, text="+", width=20, height=20, command=self.frame.add)
-        self.add_button.place(x=590, y=10)
+        self.add_button.place(x=610, y=10)
 
         self.add_group_button = customtkinter.CTkButton(
             self, text="+", width=20, height=20, fg_color="#8b02fa",
             hover_color="#5e00ab", command=lambda: self.frame.add_group(default_add=True))
-        self.add_group_button.place(x=620, y=10)
+        self.add_group_button.place(x=640, y=10)
 
         accounts_amount = config["config"]["amount"]
         accounts_amount = int(accounts_amount)
@@ -398,6 +404,8 @@ class App(customtkinter.CTk):
             groups_names.append(group.name_entry.get())
             
             windows_settings = group.windows_settings[i]
+            if windows_settings is None:
+                continue
 
             autoRAM = windows_settings.autoRAM_checkbox.get()
             autoRAM = bool(autoRAM)
