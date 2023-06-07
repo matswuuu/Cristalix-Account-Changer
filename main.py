@@ -5,6 +5,7 @@ import os
 import time
 import json
 import platform
+import shutil
 from tkinter import filedialog
 from PIL import Image
 
@@ -35,6 +36,12 @@ def get_dir():
                     global launcher_dir
                     launcher_dir = cristalix_dir + "/.launcher"
 
+                    global updates_dir
+                    updates_dir = cristalix_dir + "/updates/Minigames"
+
+                    shutil.copy(updates_dir + "/options.txt", "graphics settings/user")
+                    shutil.copy(updates_dir + "/optionsof.txt", "graphics settings/user")
+
 threading.Thread(target=get_dir).start()
 
 
@@ -52,6 +59,16 @@ def login(self, id, nick, token):
     else:
         settings = w.settings
 
+    print(settings)
+
+    def set_graphics(var):
+        shutil.copy(f"graphics settings/{var}/options.txt", updates_dir) 
+        shutil.copy(f"graphics settings/{var}/optionsof.txt", updates_dir)
+
+    if settings["minimal_graphics"]: 
+        set_graphics("minimal")
+    else:
+        set_graphics("user")
     
     with open(launcher_dir, "r") as f:
         launcher_dict = json.load(f)
