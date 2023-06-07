@@ -4,14 +4,14 @@ import subprocess
 import os
 import time
 import json
-import platform
 import shutil
+from platform import system
 from tkinter import filedialog
 from PIL import Image
 
 import customtkinter
 
-system = platform.system()
+system = system()
 if system == "Linux":
     d = "/"
 elif system == "Windows":
@@ -22,7 +22,6 @@ with open("config.json", "r") as f:
 
 filename = config["fileName"]
 groups = []
-all_settings = {}
 state = customtkinter.DISABLED
 
 def get_dir():
@@ -41,7 +40,7 @@ def get_dir():
 
                     shutil.copy(updates_dir + "/options.txt", "graphics settings/user")
                     shutil.copy(updates_dir + "/optionsof.txt", "graphics settings/user")
-                    print("скопировали")
+                    
 threading.Thread(target=get_dir).start()
 
 
@@ -56,10 +55,8 @@ def login(self, id, nick, token):
         shutil.copy(f"graphics settings/{var}/optionsof.txt", updates_dir)
 
     if settings["minimal_graphics"]: 
-        print("перемещаем в кристу")
         set_graphics("minimal")
     else:
-        print("возвращаем в кристу")
         set_graphics("user")
     
     with open(launcher_dir, "r") as f:
