@@ -9,8 +9,6 @@ from tkinter import filedialog
 from PIL import Image
 
 import customtkinter
-from configparser import ConfigParser
-
 
 system = platform.system()
 if system == "Linux":
@@ -18,14 +16,10 @@ if system == "Linux":
 elif system == "Windows":
     d = "C:/"
 
-config = ConfigParser()
-config.add_section("config")
+with open("config.json", "r") as f:
+    config = json.load(f)
 
-
-with codecs.open("config.ini", "r", encoding="utf-8") as config_file:
-    config.read_file(config_file)
-
-filename = config["config"]["filename"]
+filename = config["fileName"]
 groups = []
 all_settings = {}
 state = customtkinter.DISABLED
@@ -44,8 +38,20 @@ def get_dir():
 threading.Thread(target=get_dir).start()
 
 
-def login(nick, token, minimal_graphics, discordRPC,
-          auto_enter, fullscreen, debug_mode, RAM):
+def login(self, id, nick, token):
+    w = self.window_settings[id]
+    if w is None:
+        settings = {
+            "RAM": -1,
+            "minimal_graphics": False,
+            "discordRPC": False,
+            "auto_enter": False,
+            "fullscreen": False,
+            "debug_mode": False
+        }
+    else:
+        settings = w.settings
+
     
     with open(launcher_dir, "r") as f:
         launcher_dict = json.load(f)
@@ -54,17 +60,15 @@ def login(nick, token, minimal_graphics, discordRPC,
         launcher_dict["accounts"][nick] = token
         launcher_dict["currentAccount"] = nick
         launcher_dict["updatesDirectory"] = cristalix_dir
-        launcher_dict["minimalGraphics"] = minimal_graphics
-        launcher_dict["fullscreen"] = fullscreen
-        launcher_dict["discordRPC"] = discordRPC
-        launcher_dict["autoEnter"] = auto_enter
-        launcher_dict["debugMode"] = debug_mode
-        launcher_dict["memoryAmount"] = RAM
+        launcher_dict["minimalGraphics"] = settings["minimal_graphics"]
+        launcher_dict["fullscreen"] = settings["fullscreen"]
+        launcher_dict["discordRPC"] = settings["discordRPC"]
+        launcher_dict["autoEnter"] = settings["auto_enter"]
+        launcher_dict["debugMode"] = settings["debug_mode"]
+        launcher_dict["memoryAmount"] = settings["RAM"]
         
         with open(launcher_dir, "w") as f:
             json.dump(launcher_dict, f)
-            
-           # f.write(json_dump)
 
     if filename.endswith("jar"):
         threading.Thread(target=lambda: subprocess.call(
@@ -87,10 +91,7 @@ def start_all(self):
     tokens = get_values(self.token_entrys)
 
     for i in range(len(nicks)):
-        w = self.window_settings[i]
-
-        login(nicks[i], tokens[i], w.minimal_graphics, w.discordRPC,
-            w.auto_enter, w.fullscreen, w.debug_mode, w.RAM)
+        login(self, i, nicks[i], tokens[i])
         time.sleep(10)
 
 
@@ -99,24 +100,7 @@ def start(self, button):
     nick = self.nick_entrys[id].get()
     token = self.token_entrys[id].get()
 
-    w = self.window_settings[id]
-    if w is None:
-        RAM = -1
-        minimal_graphics = False
-        discordRPC = False
-        auto_enter = False
-        fullscreen = False
-        debug_mode = False
-    else:
-        RAM = round(w.RAM)
-        minimal_graphics = w.minimal_graphics
-        discordRPC = w.discordRPC
-        auto_enter = w.auto_enter
-        fullscreen = w.fullscreen
-        debug_mode = w.debug_mode
-
-    login(nick, token, minimal_graphics, discordRPC,
-          auto_enter, fullscreen, debug_mode, RAM)
+    login(self, id, nick, token)
 
 
 class Scrollable_Frame(customtkinter.CTkScrollableFrame):
@@ -130,19 +114,28 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
         self.delete_buttons = []
         self.settings_buttons = []
         self.window_settings = []
+        self.all_settings = []
         self.row = 0
 
     def add_group(self, name="", default_add=False):
         group = Group_Frame(self, name)
         if default_add:
             group.add()
-        group.grid(row=self.row, column=0, pady=(
+        group.grid(row=self.row, column=0, pady=(   
             15, 15), padx=(10, 10), columnspan=5)
         groups.append(group)
 
         self.row = self.row + 1
 
-    def add(self, nick="", token=""):
+    def add(self, nick="", token="", 
+            settings = {
+                "RAM": -1,
+                "minimal_graphics": False,
+                "discordRPC": False,
+                "auto_enter": False,
+                "fullscreen": False,
+                "debug_mode": False
+            }):
         nick_entry = customtkinter.CTkEntry(
             self, placeholder_text="Ник", width=180, height=25)
         nick_entry.grid(row=self.row, column=0, pady=(10, 0), padx=(10, 10))
@@ -170,6 +163,7 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
 
         settings_window = None
         self.window_settings.append(settings_window)
+        self.all_settings.append(settings)
 
         start_button = customtkinter.CTkButton(
             self, text="Запустить", width=100, height=25, state=state,
@@ -212,22 +206,11 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
 
         settings_window = self.window_settings[id]
         if settings_window is None:
-            if id in all_settings:
-                self.window_settings[id] = Settings_Window(master=self, RAM=all_settings[id]["RAM"], 
-                                                            minimal_graphics=all_settings[id]["minimal_graphics"], 
-                                                            discordRPC=all_settings[id]["discordRPC"], 
-                                                            auto_enter=all_settings[id]["auto_enter"], 
-                                                            fullscreen=all_settings[id]["fullscreen"], 
-                                                            debug_mode=all_settings[id]["debug_mode"])
-            else:        
-                self.window_settings[id] = Settings_Window(master=self)
+            self.window_settings[id] = Settings_Window(master=self, 
+                                                       settings=self.all_settings[id])
         else:
-            w = self.window_settings[id]
-
-            self.window_settings[id] = Settings_Window(master=self, RAM=w.RAM, 
-                                                        minimal_graphics=w.minimal_graphics, 
-                                                        discordRPC=w.discordRPC, auto_enter=w.auto_enter, 
-                                                        fullscreen=w.fullscreen, debug_mode=w.debug_mode)
+            self.window_settings[id] = Settings_Window(master=self, 
+                                                       settings=self.window_settings[id])
 
 
 class Group_Frame(Scrollable_Frame):
@@ -272,9 +255,7 @@ class Group_Frame(Scrollable_Frame):
         
 
 class Settings_Window(customtkinter.CTkToplevel):
-    def __init__(self, master, RAM=-1, minimal_graphics=False, 
-                 discordRPC=False, auto_enter=False, 
-                 fullscreen=False, debug_mode=False):
+    def __init__(self, master, settings):
         super().__init__(master)
         self.title("Настройки")
         self.geometry("520x190")
@@ -296,6 +277,7 @@ class Settings_Window(customtkinter.CTkToplevel):
         self.autoRAM_checkbox.select()
         self.autoRAM_checkbox.place(x=360, y=30)
         
+        RAM = settings["RAM"]
         if RAM == -1:
             self.slider.configure(state=customtkinter.DISABLED)
         else:
@@ -307,35 +289,35 @@ class Settings_Window(customtkinter.CTkToplevel):
             self, text="Минимальные настройки графики",
             checkbox_height=20, checkbox_width=20)
         self.minimal_graphics_checkbox.place(x=30, y=70)
-        if minimal_graphics:
+        if settings["minimal_graphics"]:
             self.minimal_graphics_checkbox.select()
         
         self.discordRPC_checkbox = customtkinter.CTkCheckBox(
             self, text="Отключить Discord RPC",
             checkbox_height=20, checkbox_width=20)
         self.discordRPC_checkbox.place(x=30, y=110)
-        if discordRPC:
+        if settings["discordRPC"]:
             self.discordRPC_checkbox.select()
         
         self.auto_enter_checkbox = customtkinter.CTkCheckBox(
             self, text="Автовход на сервер",
             checkbox_height=20, checkbox_width=20)
         self.auto_enter_checkbox.place(x=30, y=150)
-        if auto_enter:
+        if settings["auto_enter"]:
             self.auto_enter_checkbox.select()
 
         self.fullscreen_checkbox = customtkinter.CTkCheckBox(
             self, text="Клиент в полный экран",
             checkbox_height=20, checkbox_width=20)
         self.fullscreen_checkbox.place(x=300, y=110)
-        if fullscreen:
+        if settings["fullscreen"]:
             self.fullscreen_checkbox.select()
 
         self.debug_mode_checkbox = customtkinter.CTkCheckBox(
             self, text="Режим отладки",
             checkbox_height=20, checkbox_width=20)
         self.debug_mode_checkbox.place(x=300, y=150)
-        if debug_mode:
+        if settings["debug_mode"]:
             self.debug_mode_checkbox.select()
 
     def slider_RAM(self, value):
@@ -359,6 +341,7 @@ class Settings_Window(customtkinter.CTkToplevel):
             RAM = -1
         else:
             RAM = self.slider.get()
+        RAM = round(RAM)
         minimal_graphics = self.minimal_graphics_checkbox.get()
         minimal_graphics = bool(minimal_graphics)
         discordRPC = self.discordRPC_checkbox.get()
@@ -369,14 +352,16 @@ class Settings_Window(customtkinter.CTkToplevel):
         fullscreen = bool(fullscreen)
         debug_mode = self.debug_mode_checkbox.get()
         debug_mode = bool(debug_mode)
-        
-        self.RAM = RAM
-        self.minimal_graphics = minimal_graphics
-        self.discordRPC = discordRPC
-        self.auto_enter = auto_enter
-        self.fullscreen = fullscreen
-        self.debug_mode = debug_mode
-        
+
+        self.settings = {
+            "RAM": RAM,
+            "minimal_graphics": minimal_graphics,
+            "discordRPC": discordRPC,
+            "auto_enter": auto_enter,
+            "fullscreen": fullscreen,
+            "debug_mode": debug_mode
+        }
+            
         self.destroy()
 
 class App(customtkinter.CTk):
@@ -385,6 +370,7 @@ class App(customtkinter.CTk):
         self.title("ACCOUNT CHANGER by matswuuu")
         self.geometry("670x430")
         self.iconbitmap("images/logo.ico")
+        self.protocol("WM_DELETE_WINDOW", self.save)
 
         self.frame = Scrollable_Frame(self)
         self.frame.place(x=10, y=70)
@@ -399,7 +385,7 @@ class App(customtkinter.CTk):
 
         self.start_all_button = customtkinter.CTkButton(
             self, text="Запустить все", width=100, height=20, state=customtkinter.DISABLED,
-            command=lambda: threading.Thread(target=start_all, args=(self.frame)).start())
+            command=lambda: threading.Thread(target=start_all, args=(self.frame,)).start())
         self.start_all_button.place(x=10, y=10)
 
         self.get_token_button = customtkinter.CTkButton(    
@@ -414,52 +400,51 @@ class App(customtkinter.CTk):
             self, text="+", width=20, height=20, fg_color="#8b02fa",
             hover_color="#5e00ab", command=lambda: self.frame.add_group(default_add=True))
         self.add_group_button.place(x=640, y=10)
-
-        accounts_amount = config["config"]["amount"]
-        accounts_amount = int(accounts_amount)
         
+        with open("config.json", "r") as f:
+            config_dict = json.load(f)
+            
+        accounts_amount = len(config_dict["accounts"])
+        accounts = config_dict["accounts"]
         for i in range(accounts_amount):
-            nick = config["accounts_config"][f"{i}_nick"]
-            token = config["accounts_config"][f"{i}_token"]
-            self.frame.add(nick, token)
-
-            RAM = config["accounts_config"][f"{i}_ram"]
-            RAM = int(RAM)
-            minimal_graphics = config["accounts_config"][f"{i}_minimal_graphics"]
-            minimal_graphics = eval(minimal_graphics)
-            discordRPC = config["accounts_config"][f"{i}_discordrpc"]
-            discordRPC = eval(discordRPC)
-            auto_enter = config["accounts_config"][f"{i}_auto_enter"]
-            auto_enter = eval(auto_enter)
-            fullscreen   = config["accounts_config"][f"{i}_fullscreen"]
-            fullscreen = eval(fullscreen)
-            debug_mode = config["accounts_config"][f"{i}_debug_mode"]
-            debug_mode = eval(debug_mode)
-
-            all_settings[i] = {
-                "RAM": RAM,
-                "minimal_graphics": minimal_graphics,
-                "discordRPC": discordRPC,
-                "auto_enter": auto_enter,
-                "fullscreen": fullscreen,
-                "debug_mode": debug_mode,
-            }            
-
-        groups_amount = config["config"]["groups_amount"]
-        groups_amount = int(groups_amount)
+            a = accounts[str(i)]
+            nick = a["nick"]
+            token = a["token"]
+            settings = {
+                "RAM": a["RAM"],
+                "minimal_graphics": a["minimalGraphics"],
+                "discordRPC": a["discordRPC"],
+                "auto_enter": a["autoEnter"],
+                "fullscreen": a["fullscreen"],
+                "debug_mode": a["debugMode"]
+            }
             
+            self.frame.add(nick, token, settings)
+            
+        groups_amount = len(config_dict["groups"])
+        groups_dict = config_dict["groups"]
         for g in range(groups_amount):
-            group_config = f"{g}_group_config"
-            name = config[group_config]["group_name"]
-            group_length = config[group_config]["group_length"]
-            group_length = int(group_length)
-            
+            g = str(g)
+            name = groups_dict[g]["name"] 
             self.frame.add_group(name)
             
-            for i in range(group_length):
-                n = config[group_config][f"{i}_group_nick"]
-                t = config[group_config][f"{i}_group_token"]
-                groups[g].add(n, t)
+            group_amount = len(groups_dict[g]) - 1
+            for i in range(group_amount):
+                group = groups_dict[g][str(i)]
+                
+                nick = group["nick"]
+                token = group["token"]
+                settings = {
+                    "RAM": group["RAM"],
+                    "minimal_graphics": group["minimalGraphics"],
+                    "discordRPC": group["discordRPC"],
+                    "auto_enter": group["autoEnter"],
+                    "fullscreen": group["fullscreen"],
+                    "debug_mode": group["debugMode"]
+                }
+                
+                groups[int(g)].add(nick, token, settings)
+            
             
         if filename != "":
             self.enable()
@@ -482,7 +467,7 @@ class App(customtkinter.CTk):
             button.configure(state=state)
 
         for group in groups:
-            group.start_alfl_button.configure(state=state)
+            group.start_all_button.configure(state=state)
             for button in group.start_buttons:
                 button.configure(state=state)
 
@@ -499,101 +484,85 @@ class App(customtkinter.CTk):
             self.enable()
 
     def save(self):
-        def get_values(entrys_list):
-            l = []
-            for i in range(len(entrys_list)):
-                value = entrys_list[i].get()
-                l.append(value)
+        with open("config.json", "r") as f:
+            config_dict = json.load(f)
 
-            return l
-
-        nicks = get_values(self.frame.nick_entrys)
-        tokens = get_values(self.frame.token_entrys)
-
-        group_nicks = []
-        group_tokens = []
-        groups_names = []
- 
-        for group in groups:
-            n = get_values(group.nick_entrys)
-            group_nicks.append(n)
-            t = get_values(group.token_entrys)
-            group_tokens.append(t)
-            
-            groups_names.append(group.name_entry.get())
-            
-        length = len(nicks)
-        groups_length = len(groups)
-
-        with codecs.open("config.ini", "r", encoding="utf-8") as config_file:
-            config_file.read()
-            
-        for config_section in config.sections():
-            config.remove_section(config_section)
-    
-        def set_config(config_section, l, config_l, nicks, tokens, windows):
-            config.add_section(config_section)
-            for i, w in enumerate(windows):
-                nick = nicks[i]
-                token = tokens[i]
+        def check_window(w):
+            if w is None:
+                settings = {
+                    "RAM": -1,
+                    "minimal_graphics": False,
+                    "discordRPC": False,
+                    "auto_enter": False,
+                    "fullscreen": False,
+                    "debug_mode": False
+                }
+            else:
+                settings = w.settings
                 
-                if nick == "" or token == "":
-                    l -=1
-                    continue
-                
-                if w is None:
-                    RAM = "-1"
-                    minimal_graphics = "False"
-                    discordRPC = "False"
-                    auto_enter = "False"
-                    fullscreen = "False"
-                    debug_mode = "False"
-                else:
-                    RAM = str(round(w.RAM))
-                    minimal_graphics = str(w.minimal_graphics)
-                    discordRPC = str(w.discordRPC)
-                    auto_enter = str(w.auto_enter)
-                    fullscreen = str(w.fullscreen)
-                    debug_mode = str(w.debug_mode)
-                    
-                config.set(config_section, f"{i}_RAM", RAM)
-                config.set(config_section, f"{i}_minimal_graphics", minimal_graphics)
-                config.set(config_section, f"{i}_discordRPC", discordRPC)
-                config.set(config_section, f"{i}_auto_enter", auto_enter)
-                config.set(config_section, f"{i}_fullscreen", fullscreen)
-                config.set(config_section, f"{i}_debug_mode", debug_mode)
-                config.set(config_section, f"{i}_nick", nick)
-                config.set(config_section, f"{i}_token", token)
-                
-            if not config.has_section("config"):
-                config.add_section("config")
-                    
-            config.set("config", config_l, str(l))
-            config.set("config", "groups_amount", str(groups_length))
-            config.set("config", "filename", filename)
-                
-        set_config("accounts_config", length, "amount", nicks, tokens, 
-                   self.frame.window_settings)
+            return settings
         
-        for g, group in enumerate(group_nicks):
-            group_config = f"{g}_group_config"
-            
-            group_length = len(group)
-            
-            set_config(group_config, group_length, "group_length", group_nicks[g], 
-                       group_tokens[g], groups[g].window_settings)
-            
-            for _ in range(group_length):
-                config.set(group_config, "group_length", str(group_length))
-                config.set(group_config, "group_name", groups_names[g])
+        accounts = {}
+        length = len(self.frame.nick_entrys)
+        for i in range(length):
+            nick = self.frame.nick_entrys[i].get()
+            token = self.frame.token_entrys[i].get()
 
-        with codecs.open("config.ini", "w", encoding="utf-8") as config_file:
-            config.write(config_file)
+            if nick == "" or token == "":
+                continue
+            
+            w = self.frame.window_settings[i]
+            settings = check_window(w)
+            
+            accounts[len(accounts)] = {
+                "nick": nick,
+                "token": token,
+                "RAM": settings["RAM"],
+                "minimalGraphics": settings["minimal_graphics"],
+                "discordRPC": settings["discordRPC"],
+                "autoEnter": settings["auto_enter"],
+                "fullscreen": settings["fullscreen"],
+                "debugMode": settings["debug_mode"]
+            }
+            
 
+        groups_accounts = {}
+        for g, group in enumerate(groups):
+            groups_accounts[g] = {}
+            groups_accounts[g]["name"] = group.name_entry.get()
+            
+            length = len(group.nick_entrys)
+            for i in range(length):
+                nick = group.nick_entrys[i].get()
+                token = group.token_entrys[i].get()
+
+                if nick == "" or token == "":
+                    continue
+            
+                w = group.window_settings[i]
+                settings = check_window(w)
+                
+                groups_accounts[g][len(groups_accounts[g]) - 1] = {
+                    "nick": nick,
+                    "token": token,
+                    "RAM": settings["RAM"],
+                    "minimalGraphics": settings["minimal_graphics"],
+                    "discordRPC": settings["discordRPC"],
+                    "autoEnter": settings["auto_enter"],
+                    "fullscreen": settings["fullscreen"],
+                    "debugMode": settings["debug_mode"]
+                }
+                
+        config_dict["fileName"] = filename       
+        config_dict["accounts"] = accounts
+        config_dict["groups"] = groups_accounts
+        
+        with open("config.json", "w") as f:
+                json.dump(config_dict, f)
+        
         self.destroy()
 
 
 if __name__ == "__main__":
     app = App()
-    app.protocol("WM_DELETE_WINDOW", app.save)
     app.mainloop()
