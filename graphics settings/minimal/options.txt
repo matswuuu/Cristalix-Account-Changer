@@ -8,7 +8,7 @@ guiScale:0
 particles:2
 bobView:false
 enableVsync:false
-maxFps:10
+maxFps:5
 fboEnable:true
 fancyGraphics:false
 ao:0
@@ -43,7 +43,7 @@ mainHand:right
 attackIndicator:1
 showSubtitles:false
 autoJump:false
-maxTextureSize:448
+maxTextureSize:32
 key_key.hotbar.7:8
 key_key.hotbar.3:4
 key_key.pickItem:-98

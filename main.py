@@ -37,37 +37,29 @@ def get_dir():
                     launcher_dir = cristalix_dir + "/.launcher"
 
                     global updates_dir
-                    updates_dir = cristalix_dir + "/updates/Minigames"
+                    updates_dir = cristalix_dir + "/Minigames"
 
                     shutil.copy(updates_dir + "/options.txt", "graphics settings/user")
                     shutil.copy(updates_dir + "/optionsof.txt", "graphics settings/user")
-
+                    print("скопировали")
 threading.Thread(target=get_dir).start()
 
 
 def login(self, id, nick, token):
-    w = self.window_settings[id]
-    if w is None:
-        settings = {
-            "RAM": -1,
-            "minimal_graphics": False,
-            "discordRPC": False,
-            "auto_enter": False,
-            "fullscreen": False,
-            "debug_mode": False
-        }
-    else:
-        settings = w.settings
-
-    print(settings)
+    if self.window_settings[id] is not None:
+        self.all_settings[id] = self.window_settings[id].settings
+        
+    settings = self.all_settings[id]
 
     def set_graphics(var):
         shutil.copy(f"graphics settings/{var}/options.txt", updates_dir) 
         shutil.copy(f"graphics settings/{var}/optionsof.txt", updates_dir)
 
     if settings["minimal_graphics"]: 
+        print("перемещаем в кристу")
         set_graphics("minimal")
     else:
+        print("возвращаем в кристу")
         set_graphics("user")
     
     with open(launcher_dir, "r") as f:
@@ -79,7 +71,7 @@ def login(self, id, nick, token):
         launcher_dict["updatesDirectory"] = cristalix_dir
         launcher_dict["minimalGraphics"] = settings["minimal_graphics"]
         launcher_dict["fullscreen"] = settings["fullscreen"]
-        launcher_dict["discordRPC"] = settings["discordRPC"]
+        launcher_dict["discordRPC"] = not settings["discordRPC"]
         launcher_dict["autoEnter"] = settings["auto_enter"]
         launcher_dict["debugMode"] = settings["debug_mode"]
         launcher_dict["memoryAmount"] = settings["RAM"]
@@ -223,11 +215,11 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
 
         settings_window = self.window_settings[id]
         if settings_window is None:
-            self.window_settings[id] = Settings_Window(master=self, 
+            self.window_settings[id] = Settings_Window(master=self,
                                                        settings=self.all_settings[id])
         else:
-            self.window_settings[id] = Settings_Window(master=self, 
-                                                       settings=self.window_settings[id])
+            self.window_settings[id] = Settings_Window(master=self,
+                                                       settings=settings_window.settings)
 
 
 class Group_Frame(Scrollable_Frame):
@@ -381,6 +373,18 @@ class Settings_Window(customtkinter.CTkToplevel):
             
         self.destroy()
 
+class Error_Window(customtkinter.CTkToplevel):
+    def __init__(self, master, error):
+        super().__init__(master)
+        self.grid_columnconfigure(0, weight=1)
+        self.geometry("250x60")
+        self.title("Ошибка")
+
+        self.label = customtkinter.CTkLabel(self, text=error)
+        self.label.grid(row=0, column=0, pady=(15, 15))
+
+
+
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
@@ -388,6 +392,8 @@ class App(customtkinter.CTk):
         self.geometry("670x430")
         self.iconbitmap("images/logo.ico")
         self.protocol("WM_DELETE_WINDOW", self.save)
+        
+        self.error_window = None
 
         self.frame = Scrollable_Frame(self)
         self.frame.place(x=10, y=70)
@@ -505,6 +511,14 @@ class App(customtkinter.CTk):
             config_dict = json.load(f)
 
         def check_window(w):
+            if w is not None and w.winfo_exists():
+                if self.error_window is None or not self.error_window.winfo_exists():
+                        self.error_window = Error_Window(self, "Закройте окно настроек.")
+                else:
+                    self.error_window.focus()
+                    
+                return True
+            
             if w is None:
                 settings = {
                     "RAM": -1,
@@ -529,7 +543,11 @@ class App(customtkinter.CTk):
                 continue
             
             w = self.frame.window_settings[i]
-            settings = check_window(w)
+            c = check_window(w)
+            if c is True:
+                return
+            else:
+                settings = c
             
             accounts[len(accounts)] = {
                 "nick": nick,
@@ -557,8 +575,12 @@ class App(customtkinter.CTk):
                     continue
             
                 w = group.window_settings[i]
-                settings = check_window(w)
-                
+                c = check_window(w)
+                if c is True:
+                    return
+                else:
+                    settings = c
+                    
                 groups_accounts[g][len(groups_accounts[g]) - 1] = {
                     "nick": nick,
                     "token": token,
