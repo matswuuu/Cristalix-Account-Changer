@@ -9,7 +9,7 @@
   5. Нажмите "токен" в Account-Changer
 
 ## .exe версия:
-  [Скачать](https://github.com/matswuuu/Cristalix-Account-Changer/releases/download/v0.0.2/Account.Changer.zip), разархировать и запустить Account Changer.exe
+  [Скачать](https://github.com/matswuuu/Cristalix-Account-Changer/releases/download/v0.0.1/Account.Changer.zip), разархировать и запустить Account Changer.exe
  
 ### .py версия:
   Для работы необходим [Python 3](https://www.python.org/downloads/), дополнительные библиотеки
