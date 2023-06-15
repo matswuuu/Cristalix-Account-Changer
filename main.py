@@ -7,24 +7,8 @@ import json
 from tkinter import filedialog
 
 import customtkinter
-from configparser import ConfigParser
 
-
-config = ConfigParser()
-config.add_section("config")
-
-with codecs.open("config.ini", "r", encoding="utf-8") as config_file:
-    config.read_file(config_file)
-
-filename = config["config"]["filename"]
-
-
-def browse():
-    global filename
-    filename = filedialog.askopenfilename(
-        initialdir="/", title="Выберите лаунчер",
-        filetypes=(("Java ланучер", "*.jar*"),
-                   ("Exe лаунчер", "*.exe*")))
+state = customtkinter.DISABLED
 
 
 def get_dir():
@@ -32,28 +16,14 @@ def get_dir():
         for file in files:
             if ((file.split('.')[-1]) == 'launcher'):
                 if rootdir.find("cristalix") != -1:
-                    rootdir = rootdir.replace(
-                        "/", "\\").replace("\\", "\\\\")
+                    global cristalix_dir
+                    cristalix_dir = rootdir
 
-                    return rootdir
+                    global launcher_dir
+                    launcher_dir = cristalix_dir + "/.launcher"
 
 
-def login(nick, token):
-    dir = get_dir()
-    with codecs.open("default_config.txt", "r", encoding="utf-8") as launcher_config:
-        lc = launcher_config.read()
-        lc = lc.replace("NICK", nick).replace("TOKEN", token).replace(
-            "UPDATESDIR", dir + "\\\\updates")
-
-    with codecs.open(f"{dir}/.launcher", "w", encoding="utf-8") as launcher_file:
-        launcher_file.write(lc)
-
-    if filename.endswith("jar"):
-        threading.Thread(target=lambda: subprocess.call(
-            ["java", "-jar", filename])).start()
-    else:
-        threading.Thread(
-            target=lambda: os.startfile(filename)).start()
+threading.Thread(target=get_dir).start()
 
 
 class Scrollable_Frame(customtkinter.CTkScrollableFrame):
@@ -66,7 +36,6 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
         self.start_buttons = []
         self.delete_buttons = []
         self.row = 0
-        self.state = customtkinter.DISABLED
 
     def add(self, nick="", token=""):
         self.row = self.row + 1
@@ -84,7 +53,7 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
         self.token_entrys.append(token_entry)
 
         start_button = customtkinter.CTkButton(
-            self, text="Запустить", width=100, height=25, state=self.state,
+            self, text="Запустить", width=100, height=25, state=state,
             command=lambda: self.start(start_button))
         start_button.grid(row=self.row, column=2, pady=(10, 0), padx=(10, 10))
         self.start_buttons.append(start_button)
@@ -107,47 +76,41 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
         self.start_buttons.pop(id)
         self.delete_buttons.pop(id)
 
+    def login(self, nick, token):
+        with codecs.open(launcher_dir, "r", encoding="utf-8") as f:
+            launcher_dict = json.load(f)
+
+            launcher_dict["accounts"] = {}
+            launcher_dict["accounts"][nick] = token
+            launcher_dict["currentAccount"] = nick
+
+            with codecs.open(launcher_dir, "w", encoding="utf-8") as f:
+                json.dump(launcher_dict, f)
+
+        if filename.endswith("jar"):
+            threading.Thread(target=lambda: subprocess.call(
+                ["java", "-jar", filename])).start()
+        else:
+            threading.Thread(
+                target=lambda: os.startfile(filename)).start()
+
     def start(self, button):
         id = self.start_buttons.index(button)
         nick = self.nick_entrys[id].get()
         token = self.token_entrys[id].get()
 
-        login(nick, token)
-
-    def enable_buttons(self):
-        for button in self.start_buttons:
-            button.configure(state=customtkinter.NORMAL)
-
-        self.state = customtkinter.NORMAL
-
-    def get_all_values(self):
-        def get_values(entrys_list):
-            l = []
-            for i in range(len(entrys_list)):
-                value = entrys_list[i].get()
-                l.append(value)
-
-            return l
-
-        nicks = get_values(self.nick_entrys)
-        tokens = get_values(self.token_entrys)
-
-        return nicks, tokens
+        self.login(nick, token)
 
 
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
-        self.title("ACCOUNT CHANGER by matswuuu")
+        self.title("ACCOUNT CHANGER")
         self.geometry("600x400")
-        self.iconbitmap("images\logo.ico")
+        self.iconbitmap("images/logo.ico")
 
         self.frame = Scrollable_Frame(self)
         self.frame.place(x=10, y=70)
-
-        self.browse_label = customtkinter.CTkLabel(
-            self, text=f"Лаунчер: {filename}", width=160, height=20)
-        self.browse_label.place(x=90, y=40)
 
         self.browse_files_button = customtkinter.CTkButton(
             self, text="Выбрать", width=60, height=20, command=self.browse_files)
@@ -166,17 +129,43 @@ class App(customtkinter.CTk):
             self, text="+", width=20, height=20, command=self.frame.add)
         self.add_button.place(x=570, y=10)
 
-        for i in range(int(config["config"]["amount"])):
-            nick = config["config"][f"{i}_nick"]
-            token = config["config"][f"{i}_token"]
-            self.frame.add(nick, token)
+        self.switch = customtkinter.CTkSwitch(
+            self, text="Тема", command=self.set_theme)
+        self.switch.place(x=520, y=40)
 
+        with codecs.open("config.json", "r", encoding="utf-8") as f:
+            config_dict = json.load(f)
+
+        global filename
+        filename = config_dict["fileName"]
         if filename != "":
             self.enable()
 
+        self.browse_label = customtkinter.CTkLabel(
+            self, text=f"Лаунчер: {filename}", width=160, height=20)
+        self.browse_label.place(x=90, y=40)
+
+        if config_dict["theme"]:
+            self.switch.select()
+        self.set_theme()
+
+        accounts_amount = len(config_dict["accounts"])
+        accounts = config_dict["accounts"]
+        for i in range(accounts_amount):
+            a = accounts[str(i)]
+            nick = a["nick"]
+            token = a["token"]
+
+            self.frame.add(nick, token)
+
+    def set_theme(self):
+        if bool(self.switch.get()):
+            customtkinter.set_appearance_mode("light")
+        else:
+            customtkinter.set_appearance_mode("dark")
+
     def get_token(self):
-        dir = get_dir()
-        with codecs.open(f"{dir}/.launcher", encoding="utf-8") as f:
+        with codecs.open(launcher_dir, encoding="utf-8") as f:
             lc = json.loads(f.read())
             account = lc["currentAccount"]
             token = lc["accounts"][account]
@@ -185,39 +174,61 @@ class App(customtkinter.CTk):
 
     def enable(self):
         self.start_all_button.configure(state=customtkinter.NORMAL)
-        self.frame.enable_buttons()
+        for button in self.frame.start_buttons:
+            button.configure(state=customtkinter.NORMAL)
+
+        global state
+        state = customtkinter.NORMAL
 
     def browse_files(self):
-        browse()
+        global filename
+        filename = filedialog.askopenfilename(
+            initialdir="/", title="Выберите лаунчер",
+            filetypes=(("Java ланучер", "*.jar*"),
+                       ("Exe лаунчер", "*.exe*")))
 
         self.browse_label.configure(text=f"Лаунчер: {filename}")
 
-        if filename != "":
-            self.enable()
-
     def start_all(self):
-        nicks, tokens = self.frame.get_all_values()
+        length = len(self.frame.nick_entrys)
+        for i in range(length):
+            nick = self.frame.nick_entrys[i].get()
+            token = self.frame.token_entrys[i].get()
 
-        for i in range(len(nicks)):
-            login(nicks[i], tokens[i])
+            self.frame.login(nick, token)
             time.sleep(10)
 
     def save(self):
-        nicks, tokens = self.frame.get_all_values()
-        length = len(nicks)
+        with codecs.open("config.json", "r", encoding="utf-8") as f:
+            config_dict = json.load(f)
 
+        accounts = {}
+        length = len(self.frame.nick_entrys)
         for i in range(length):
-            config.set("config", "amount", str(length))
-            config.set("config", "filename", filename)
-            config.set("config", f"{i}_nick", nicks[i])
-            config.set("config", f"{i}_token", tokens[i])
+            nick = self.frame.nick_entrys[i].get()
+            token = self.frame.token_entrys[i].get()
 
-            with codecs.open("config.ini", "w", encoding="utf-8") as config_file:
-                config.write(config_file)
+            if not nick or not token:
+                continue
+
+            accounts[len(accounts)] = {
+                "nick": nick,
+                "token": token,
+            }
+
+            theme = bool(self.switch.get())
+
+            config_dict["theme"] = theme
+            config_dict["fileName"] = filename
+            config_dict["accounts"] = accounts
+
+            with codecs.open("config.json", "w", encoding="utf-8") as f:
+                json.dump(config_dict, f)
 
         self.destroy()
 
 
-app = App()
-app.protocol("WM_DELETE_WINDOW", app.save)
-app.mainloop()
+if __name__ == "__main__":
+    app = App()
+    app.protocol("WM_DELETE_WINDOW", app.save)
+    app.mainloop()
