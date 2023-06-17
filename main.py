@@ -173,12 +173,20 @@ class App(customtkinter.CTk):
             self.frame.add(account, token)
 
     def enable(self):
-        self.start_all_button.configure(state=customtkinter.NORMAL)
-        for button in self.frame.start_buttons:
-            button.configure(state=customtkinter.NORMAL)
-
         global state
         state = customtkinter.NORMAL
+
+        self.start_all_button.configure(state=state)
+        for button in self.frame.start_buttons:
+            button.configure(state=state)
+
+    def disable(self):
+        global state
+        state = customtkinter.DISABLED
+
+        self.start_all_button.configure(state=state)
+        for button in self.frame.start_buttons:
+            button.configure(state=state)
 
     def browse_files(self):
         global filename
@@ -188,6 +196,11 @@ class App(customtkinter.CTk):
                        ("Exe лаунчер", "*.exe*")))
 
         self.browse_label.configure(text=f"Лаунчер: {filename}")
+
+        if filename != "":
+            self.enable()
+        else:
+            self.disable()
 
     def start_all(self):
         length = len(self.frame.nick_entrys)
