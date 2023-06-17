@@ -23,7 +23,7 @@ def get_dir():
                     launcher_dir = cristalix_dir + "/.launcher"
 
 
-threading.Thread(target=get_dir).start()
+threading.Thread(target=get_dir, daemon=True).start()
 
 
 class Scrollable_Frame(customtkinter.CTkScrollableFrame):
@@ -89,10 +89,10 @@ class Scrollable_Frame(customtkinter.CTkScrollableFrame):
 
         if filename.endswith("jar"):
             threading.Thread(target=lambda: subprocess.call(
-                ["java", "-jar", filename])).start()
+                ["java", "-jar", filename]), daemon=False).start()
         else:
             threading.Thread(
-                target=lambda: os.startfile(filename)).start()
+                target=lambda: os.startfile(filename), daemon=False).start()
 
     def start(self, button):
         id = self.start_buttons.index(button)
@@ -118,7 +118,7 @@ class App(customtkinter.CTk):
 
         self.start_all_button = customtkinter.CTkButton(
             self, text="Запустить все", width=100, height=20, state=customtkinter.DISABLED,
-            command=lambda: threading.Thread(target=self.start_all).start())
+            command=lambda: threading.Thread(target=self.start_all, daemon=True).start())
         self.start_all_button.place(x=10, y=10)
 
         self.get_token_button = customtkinter.CTkButton(
@@ -173,12 +173,12 @@ class App(customtkinter.CTk):
             self.frame.add(account, token)
 
     def enable(self):
-        self.start_all_button.configure(state=customtkinter.NORMAL)
-        for button in self.frame.start_buttons:
-            button.configure(state=customtkinter.NORMAL)
-
         global state
         state = customtkinter.NORMAL
+        
+        self.start_all_button.configure(state=state)
+        for button in self.frame.start_buttons:
+            button.configure(state=state)
 
     def browse_files(self):
         global filename
