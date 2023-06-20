@@ -1,6 +1,8 @@
 # Cristalix-Account-Changer
 Программа для смены аккаунтов в лаунчере Cristalix.
 
+# https://www.accountchanger.ru/
+
 # Получение токена
   1. Запустите лаунчер Cristalix
   2. Выйдите из аккаунта
